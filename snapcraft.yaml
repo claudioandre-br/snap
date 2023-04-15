@@ -1,0 +1,140 @@
+###############################################################################
+#        _       _             _   _            _____  _
+#       | |     | |           | | | |          |  __ \(_)
+#       | | ___ | |__  _ __   | |_| |__   ___  | |__) |_ _ __  _ __   ___ _ __
+#   _   | |/ _ \| '_ \| '_ \  | __| '_ \ / _ \ |  _  /| | '_ \| '_ \ / _ \ '__|
+#  | |__| | (_) | | | | | | | | |_| | | |  __/ | | \ \| | |_) | |_) |  __/ |
+#   \____/ \___/|_| |_|_| |_|  \__|_| |_|\___| |_|  \_\_| .__/| .__/ \___|_|
+#                                                       | |   | |
+#                                                       |_|   |_|
+#
+# Copyright (c) 2019-2023 Claudio André <claudioandre.br at gmail.com>
+#
+# This program comes with ABSOLUTELY NO WARRANTY; express or implied.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, as expressed in version 2, seen at
+# http://www.gnu.org/licenses/gpl-2.0.html
+###############################################################################
+# Recipe to create the snap package
+# More info at https://github.com/openwall/john-packages
+
+name: john-the-ripper
+version: bleeding
+
+confinement: strict
+grade: stable               #TODO: [stable or devel] edit before release (JUMBO_RELEASE)
+base: core22
+
+assumes: [ snapd2.41 ]
+adopt-info: john-the-ripper
+
+license: GPL-2.0
+title: John the Ripper CE Auditing Tool
+summary: John the Ripper password security auditing and recovery tool
+description: |
+  [Openwall's](https://openwall.com/) John the Ripper (JtR) is a fast password cracker,
+  currently available for many flavors of Unix and for Windows. Its primary
+  purpose is to detect weak Unix passwords. Besides several crypt(3) password hash
+  types most commonly found on various Unix systems, supported out of the box are
+  Windows LM hashes, various macOS password hashes, as well as many
+  non-hashes such as SSH private keys, encrypted filesystems such as macOS .dmg files
+  and "sparse bundles", encrypted archives such as ZIP, RAR, and 7z,
+  encrypted document files such as PDF and Microsoft Office's, plus lots of
+  other hashes and ciphers.
+
+icon: icon.png
+
+apps:
+  john-the-ripper:
+    command: run/john
+    plugs: [home, removable-media]
+  opencl:
+    command: run/john
+    plugs: [home, removable-media]
+  dmg2john:
+    command: run/dmg2john
+    plugs: [home, removable-media]
+  hccap2john:
+    command: run/hccap2john
+    plugs: [home, removable-media]
+  racf2john:
+    command: run/racf2john
+    plugs: [home, removable-media]
+  vncpcap2john:
+    command: run/vncpcap2john
+    plugs: [home, removable-media]
+  zip2john:
+    command: run/zip2john
+    plugs: [home, removable-media]
+  gpg2john:
+    command: run/gpg2john
+    plugs: [home, removable-media]
+  keepass2john:
+    command: run/keepass2john
+    plugs: [home, removable-media]
+  putty2john:
+    command: run/putty2john
+    plugs: [home, removable-media]
+  rar2john:
+    command: run/rar2john
+    plugs: [home, removable-media]
+  uaf2john:
+    command: run/uaf2john
+    plugs: [home, removable-media]
+  wpapcap2john:
+    command: run/wpapcap2john
+    plugs: [home, removable-media]
+
+parts:
+  john-the-ripper:
+    plugin: nil
+    source: .
+    override-pull: |
+      craftctl default
+
+      # Get latest files from upstream repository
+      wget https://raw.githubusercontent.com/openwall/john-packages/release/deploy/snap/build.sh -O build.sh
+      chmod +x build.sh
+
+      ./build.sh PULL
+      craftctl set version="$(./package_version.sh)"
+
+    override-build: |
+      ./build.sh
+      mkdir -p ../install/etc/bash_completion
+      cp run/john.*_completion ../install/etc/bash_completion/
+      mkdir -p ../install/share/icons
+      cp icon.png ../install/share/icons/icon.png
+
+    build-packages:
+      - build-essential
+      - libssl-dev
+      - libgmp-dev
+      - libpcap-dev
+      - libbz2-dev
+      - zlib1g-dev
+      - git
+      - wget
+      - curl
+      - patch
+      # OpenCL stuff is available only in X86 architecture
+      - on amd64:
+        - libpocl-dev
+        - ocl-icd-opencl-dev
+        - pocl-opencl-icd
+
+    organize:
+      ../build/run/: run/
+      ../build/doc/: doc/
+      ../build/README.md: README.md
+
+  libs:
+    plugin: nil
+
+    stage-packages:
+      - libgomp1
+      - libpcap0.8
+      - on amd64:
+        - ocl-icd-libopencl1
